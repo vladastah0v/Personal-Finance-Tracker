@@ -5,6 +5,9 @@ db = SQLAlchemy()
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True, nullable=False)
+    
+    def to_dict(self):
+        return {"id": self.id, "name": self.name}
 
 class Transaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -15,6 +18,17 @@ class Transaction(db.Model):
     note = db.Column(db.String(200))
 
     category = db.relationship('Category', backref='transactions')
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "category_id": self.category_id,
+            "category_name": self.category.name,
+            "amount": self.amount,
+            "type": self.type,
+            "date": self.date.isoformat(),
+            "note": self.note
+        }
 
 class Budget(db.Model):
     id = db.Column(db.Integer, primary_key=True)
