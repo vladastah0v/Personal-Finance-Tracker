@@ -36,4 +36,7 @@ class Budget(db.Model):
     monthly_limit = db.Column(db.Float, nullable=False)
 
     category = db.relationship('Category', backref='budget', uselist=False)
+
+    def to_dict(self):
+        return {"id": self.id, "category_id": self.category_id, "monthly_limit": self.monthly_limit}
     
