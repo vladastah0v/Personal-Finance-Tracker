@@ -7,7 +7,6 @@ load_dotenv()
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-
 def send_telegram_message(text):
     if not BOT_TOKEN or not CHAT_ID:
         print("Telegram не настроен, уведомление пропущено")
