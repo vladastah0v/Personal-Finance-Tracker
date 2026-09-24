@@ -3,7 +3,19 @@ from datetime import datetime, date
 from sqlalchemy import func
 from models import db, Category, Transaction, Budget
 from telegram_notify import send_telegram_message
+import os
+from flask import Flask, request, jsonify, render_template, redirect, url_for
 
+def create_app(db_uri=None):
+    app = Flask(__name__)
+
+    db_uri = db_uri or os.getenv('DATABASE_URL', 'sqlite:///finance_tracker.db')
+    # Render отдаёт адрес в формате postgres://, а SQLAlchemy ожидает postgresql://
+    if db_uri.startswith('postgres://'):
+        db_uri = db_uri.replace('postgres://', 'postgresql://', 1)
+
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
+    db.init_app(app)
 
 def create_app(db_uri='sqlite:///finance_tracker.db'):
     app = Flask(__name__)
