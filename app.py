@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template, redirect, url_for
 from datetime import datetime, date
 from sqlalchemy import func
 from models import db, Category, Transaction, Budget
@@ -31,9 +31,64 @@ def create_app(db_uri='sqlite:///finance_tracker.db'):
                 f"{total_spent:.0f} из {budget.monthly_limit:.0f}"
             )
 
-    @app.route("/")
-    def home():
+    @app.route("/health")
+    def helth():
         return "Finance Tracker API работает!"
+    
+    @app.route("/", methods=["GET"])
+    def index():
+        transactions = Transaction.query.order_by(Transaction.date.desc()).all()
+        categories = Category.query.all()
+        budgets = {b.category_id: b.monthly_limit for b in Budget.query.all()}
+
+        start_of_month = date.today().replace(day=1)
+        spending = {}
+        for cat in categories:
+            total = db.session.query(func.sum(Transaction.amount)).filter(
+                Transaction.category_id == cat.id,
+                Transaction.type == "expense",
+                Transaction.date >= start_of_month
+            ).scalar() or 0
+            spending[cat.id] = total
+
+        return render_template(
+            "index.html",
+            transactions=transactions,
+            categories=categories,
+            budgets=budgets,
+            spending=spending
+        )
+
+    @app.route("/add", methods=["POST"])
+    def add_transaction_form():
+        category_id = int(request.form["category_id"])
+        amount = float(request.form["amount"])
+        type_ = request.form["type"]
+        date_str = request.form["date"]
+        note = request.form.get("note", "")
+
+        transaction = Transaction(
+            category_id=category_id,
+            amount=amount,
+            type=type_,
+            date=datetime.strptime(date_str, "%Y-%m-%d").date(),
+            note=note
+        )
+        db.session.add(transaction)
+        db.session.commit()
+
+        if type_ == "expense":
+            check_budget_and_notify(category_id)
+
+        return redirect(url_for("index"))
+
+    @app.route("/delete/<int:transaction_id>", methods=["POST"])
+    def delete_transaction_form(transaction_id):
+        transaction = Transaction.query.get(transaction_id)
+        if transaction:
+            db.session.delete(transaction)
+            db.session.commit()
+        return redirect(url_for("index"))
 
     @app.route("/categories", methods=["GET"])
     def get_categories():
